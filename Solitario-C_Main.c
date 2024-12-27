@@ -122,7 +122,7 @@ void imprimir_tablero_(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Ma
 	
 	printf("\033[42m     A     B     C     D     E     F     G\n");
 	
-	for(fila = 1; fila <= 15; fila++)
+	for(fila = 1; fila <= 19; fila++)
 	{
 		printf("%2d ", fila);
 		
@@ -371,7 +371,7 @@ void imprimir_carta(Carta* carta)
 	}
 	else //carta oculta
 	{
-		printf("%s%s|   |%s", coloresTexto[1], coloresFondoTexto[carta->oculto], textoDefecto);
+		printf("%s%s|%c%c%c|%s", coloresTexto[1], coloresFondoTexto[carta->oculto], 176, 176, 176, textoDefecto);
 	}
 }
 
@@ -396,7 +396,7 @@ void imprimir_carta_(Carta* carta)
 	}
 	else //carta oculta
 	{
-		printf("%s%s|   |%s", coloresTexto[1], coloresFondoTexto[carta->oculto], textoDefecto);
+		printf("%s%s|%c%c%c|%s", coloresTexto[1], coloresFondoTexto[carta->oculto], 176, 176, 176, textoDefecto);
 	}
 }
 
@@ -431,7 +431,7 @@ void imprimir_carta__(Carta* carta)
 	}
 	else //carta oculta
 	{
-		printf("%s%s|   |%s", coloresTexto[1], coloresFondoTexto[carta->oculto], textoDefecto);
+		printf("%s%s|%c%c%c|%s", coloresTexto[1], coloresFondoTexto[carta->oculto], 176, 176, 176, textoDefecto);
 	}
 }
 
@@ -599,6 +599,8 @@ void mover_cartas_entre_columnas(Mazo* mazoOrigen, Mazo* mazoDestino, int fila)
 
 void mover_carta_pila_ordenada(Mazo* mazoOrigen, Mazo* mazoDestino, int fila)
 {
+	if(mazoOrigen->tope == NULL) return; //si origen esta vacio
+	
 	//si se recibe fila como -1 entonces es para mover desde el monticulo desordenado
 	if(fila == -1)
 	{//El M que muestra el juego es en realidad M_, por lo que si la carta que movimos es la unica que M_ posee, este despues se mostrara como vacia, pero eso no significa que M este vacio
@@ -900,23 +902,25 @@ void prompt(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo
 				}
 				else if(prompt[1] == '-') //si solo ingreso la letra de la columna como primer termino, se asume que solo querria mover el tope de su carta a otra pila de cartas
 				{
+					if(columnas[columna]->tope == NULL) break; //condicional de guardia
+					
 					switch(prompt[2])
 					{
 						case 'P': case 'p':
 							mover_carta_pila_ordenada(columnas[columna], P, columnas[columna]->tope->fila);
-							if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
+							columnas[columna]->tope->oculto = 0;
 							break;
 						case 'T': case 't':
 							mover_carta_pila_ordenada(columnas[columna], T, columnas[columna]->tope->fila);
-							if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
+							columnas[columna]->tope->oculto = 0;
 							break;
 						case 'R': case 'r':
 							mover_carta_pila_ordenada(columnas[columna], R, columnas[columna]->tope->fila);
-							if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
+							columnas[columna]->tope->oculto = 0;
 							break;
 						case 'S': case 's':
 							mover_carta_pila_ordenada(columnas[columna], S, columnas[columna]->tope->fila);
-							if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
+							columnas[columna]->tope->oculto = 0;
 							break;				
 					}
 					
@@ -945,8 +949,11 @@ void prompt(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo
 
 void movimiento_rapido(Mazo* origen, Mazo* P, Mazo* R, Mazo* S, Mazo* T, int fila)
 {
-	int existePalo = 0, x;
+	int x;
 	Mazo* ordenadas_[4] = { P, R, S, T };
+	
+	//si origen esta vacio
+	if(origen->tope == NULL) return;
 	
 	//revisa los topes de los monticulos ordenados, si encuentra uno valido donde colocar la carta del monticulo desordenado, la coloca, y no encuentra un monticulo con un palo, la bandera se mantiene igual, la cual es usada en el siguiente if
 	for(x = 0; x < 4; x++)
@@ -955,28 +962,18 @@ void movimiento_rapido(Mazo* origen, Mazo* P, Mazo* R, Mazo* S, Mazo* T, int fil
 		{
 			if(ordenadas_[x]->tope->palo == origen->tope->palo)
 			{
-				if(ordenadas_[x]->tope->numero == origen->tope->numero - 1)
-				{
-					mover_carta_pila_ordenada(origen, ordenadas_[x], fila);
-					return;
-				}
-				
-				existePalo = 1;
-				break;
+				mover_carta_pila_ordenada(origen, ordenadas_[x], fila);
+				return;
 			}
 		}
 	}
 	
 	//si el palo no existe entre los monticulos ordenados, se coloca la carta en el primer monticulo vacio, siempre que sea una carta valida (As)
-	if(!existePalo)
+	for(x = 0; x < 4; x++)
 	{
-		for(x = 0; x < 4; x++)
+		if(ordenadas_[x]->tope == NULL)
 		{
-			if(ordenadas_[x]->tope == NULL)
-			{
-				mover_carta_pila_ordenada(origen, ordenadas_[x], fila);
-				return;
-			}
+			mover_carta_pila_ordenada(origen, ordenadas_[x], fila);
 		}
 	}
 }
@@ -1052,6 +1049,6 @@ void help()
 	printf("\"exit\" - Termina el juego\n");
 	printf("\"restart\" - Reinicia el juego\n");
 	printf("\"help\" - Muestra esta pantalla de ayuda\n\n");
-	fputs("Programado por Alejandro Daniel, Arriola Bareiro\n", stdout);
+	fputs("Disenhado y programado por Alejandro Daniel, Arriola Bareiro\n", stdout);
 	system("PAUSE");
 }
