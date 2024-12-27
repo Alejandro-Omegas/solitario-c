@@ -31,7 +31,10 @@ void mezclar_mazo(Mazo* mazo);
 void imprimir_mazo(Mazo* mazo); //usado para DEBUG
 void distribuir_cartas(Mazo* M, Mazo* M_, Mazo* A, Mazo* B, Mazo* C, Mazo* D, Mazo* E, Mazo* F, Mazo* G);
 void imprimir_tablero(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo* B, Mazo* C, Mazo* D, Mazo* E, Mazo* F, Mazo* G);
-void imprimir_carta(Carta* carta);
+void imprimir_tablero_(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo* B, Mazo* C, Mazo* D, Mazo* E, Mazo* F, Mazo* G); //imprime a color. creado una segunda version para DEBUGGING
+void imprimir_carta(Carta* carta); //las cartas se dividen graficamente en tres partes: arriba, medio y abajo. Esta funcion imprime la parte de arriba
+void imprimir_carta_(Carta* carta); //Esat funcion imprime la parte media
+void imprimir_carta__(Carta* carta); //Esat funcion imprime la parte baja
 void mover_cartas_entre_columnas(Mazo* mazoOrigen, Mazo* mazoDestino, int fila);
 void mover_carta_pila_ordenada(Mazo* mazoOrigen, Mazo* mazoDestino, int fila); //si seingresa fila como -1, la funcion asume que se mueve desde el monticulo desordenado
 void mover_carta_a_columnas(Mazo* mazoOrigen, Mazo* mazoDestino);
@@ -79,6 +82,76 @@ void imprimir_tablero(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Maz
 		{
 			if(pilas[x] != NULL)
 			{
+				pilas[x] = pilas[x]->anterior;
+			}
+		}
+	}
+	printf("\n");
+}
+
+//imprime a color
+void imprimir_tablero_(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo* B, Mazo* C, Mazo* D, Mazo* E, Mazo* F, Mazo* G)
+{	
+	int fila, columna, x;
+	Carta* pilas[7] = { A->base, B->base, C->base, D->base, E->base, F->base, G->base, }; //para imprimir las pilas de abajo para arriba
+	Mazo* columnas[7] = { A, B, C, D, E, F, G }; //para dibujar la carta del tope completa
+	//banderas utilizadas para determinar si se deben dibujar o no las partes media y baja de las cartas tope de las columnas
+	Carta* band_[7] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL }; 
+	Carta* band__[7] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL }; 
+	                  
+	printf("        M  \t\t  P     R     S     T\n");
+	imprimir_carta(M->tope); printf("\033[42m "); //\033[42m pinta el fondo de verde
+	imprimir_carta(M_->tope); printf("\033[42m\t\t");
+	imprimir_carta(P->tope); printf("\033[42m ");
+	imprimir_carta(R->tope); printf("\033[42m ");
+	imprimir_carta(S->tope); printf("\033[42m ");
+	imprimir_carta(T->tope); printf("\n");
+	imprimir_carta_(M->tope); printf("\033[42m ");
+	imprimir_carta_(M_->tope); printf("\033[42m\t\t");
+	imprimir_carta_(P->tope); printf("\033[42m ");
+	imprimir_carta_(R->tope); printf("\033[42m ");
+	imprimir_carta_(S->tope); printf("\033[42m ");
+	imprimir_carta_(T->tope); printf("\n");
+	imprimir_carta__(M->tope); printf("\033[42m ");
+	imprimir_carta__(M_->tope); printf("\033[42m\t\t");
+	imprimir_carta__(P->tope); printf("\033[42m ");
+	imprimir_carta__(R->tope); printf("\033[42m ");
+	imprimir_carta__(S->tope); printf("\033[42m ");
+	imprimir_carta__(T->tope); printf("\n\n");
+	
+	printf("     A     B     C     D     E     F     G\n");
+	for(fila = 1; fila <= 15; fila++)
+	{
+		printf("%2d ", fila);
+		
+		for(columna = 0; columna < 7; columna++)
+		{
+			if(band_[columna] != NULL)
+			{
+				imprimir_carta_(band_[columna]);
+				band__[columna] = band_[columna]; //levanamos la bandera para dibujar la parte inferior del tope
+				band_[columna] = NULL;
+			}
+			else if(band__[columna] != NULL)
+			{
+				imprimir_carta__(band__[columna]);
+				band__[columna] = NULL;
+			}
+			else
+			{
+				imprimir_carta(pilas[columna]);
+			}
+			
+			printf("\033[42m ");	
+		}
+
+		printf("\033[42m%2d\n", fila);
+		
+		for(x = 0; x < 7; x++)
+		{
+			if(pilas[x] != NULL)
+			{
+				if(pilas[x]->anterior == NULL) band_[x] = pilas[x]; //al llegar a nulo despues del cambio, se asume que estamos al tope, por lo que se levanta la bandera de esa columna para dibujar la parte media y se guarda una copia de la carta tope, porque necesitamos datos de ella para dibujar
 				pilas[x] = pilas[x]->anterior;
 			}
 		}
@@ -298,6 +371,66 @@ void imprimir_carta(Carta* carta)
 	}
 }
 
+void imprimir_carta_(Carta* carta)
+{	                          //Rojo       Negro        Reset
+	char* coloresTexto[] = { "\033[31m", "\033[30m", "\033[39m"  };
+	                             //Blanco      Amarillo     Reset
+	char* coloresFondoTexto[] = { "\033[47m", "\033[43m",  "\033[49m" };
+	char* textoDefecto = "\033[0m"; //para que el estilo, color de fondo de texto y color texto vuelvan a sus valores default
+	
+	int numero;
+	
+	if(carta == NULL) //en caso de carta nula, solo imprimimos espacios representando casilla vacia
+	{
+		printf("     ");
+		return; 
+	}
+	
+	if(carta->oculto == 0) //carta revelada
+	{
+		printf("%s%s[   ]%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], textoDefecto);
+	}
+	else //carta oculta
+	{
+		printf("%s%s[   ]%s", coloresTexto[1], coloresFondoTexto[carta->oculto], textoDefecto);
+	}
+}
+
+void imprimir_carta__(Carta* carta)
+{	                          //Rojo       Negro        Reset
+	char* coloresTexto[] = { "\033[31m", "\033[30m", "\033[39m"  };
+	                             //Blanco      Amarillo     Reset
+	char* coloresFondoTexto[] = { "\033[47m", "\033[43m",  "\033[49m" };
+	char* textoDefecto = "\033[0m"; //para que el estilo, color de fondo de texto y color texto vuelvan a sus valores default
+	
+	int numero;
+	
+	if(carta == NULL) //en caso de carta nula, solo imprimimos espacios representando casilla vacia
+	{
+		printf("     ");
+		return; 
+	}
+	
+	switch(carta->numero)
+	{
+		case 1: numero = 65; break; //A
+		case 11: numero = 74; break; //J
+		case 12: numero = 81; break; //Q
+		case 13: numero = 75; break; //K
+		default: numero = carta->numero + 48; //2-10 en ASCII
+	}
+	
+	if(carta->oculto == 0) //carta revelada
+	{
+		if(numero == 58) printf("%s%s[10%c]%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], carta->palo, textoDefecto); //para el caso que sea 10
+		else printf("%s%s[%-2c%c]%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], numero, carta->palo, textoDefecto);
+	}
+	else //carta oculta
+	{
+		printf("%s%s[   ]%s", coloresTexto[1], coloresFondoTexto[carta->oculto], textoDefecto);
+	}
+}
+
 void terminar_memoria_insuficiente()
 {
 	printf("Memoria insuficiente..."); getchar();
@@ -307,7 +440,7 @@ void terminar_memoria_insuficiente()
 void tp_final()
 {
 	//SetConsoleTextAttribute (GetStdHandle(STD_OUTPUT_HANDLE), BACKGROUND_GREEN );
-	//system("COLOR 2F"); //para color de fondo verde (2) con color de letras blanco brillante (F)
+	system("COLOR 2F"); //para color de fondo verde (2) con color de letras blanco brillante (F)
 	srand(time(NULL));
 
 	Mazo M, M_; //monticulo desordenado. El M_ sera donde se coloquen las cartas de M conforme se revelen
@@ -338,7 +471,7 @@ void tp_final()
 	while(salida  == 0)
 	{
 		system("CLS");
-		imprimir_tablero(&M, &M_, &P, &R, &S, &T, &A, &B, &C, &D, &E, &F, &G);
+		imprimir_tablero_(&M, &M_, &P, &R, &S, &T, &A, &B, &C, &D, &E, &F, &G);
 		prompt(&M, &M_, &P, &R, &S, &T, &A, &B, &C, &D, &E, &F, &G, &salida);
 		chequar_victoria(&M, &M_, &P, &R, &S, &T, &A, &B, &C, &D, &E, &F, &G, &salida);
 	}
@@ -792,7 +925,7 @@ void chequar_victoria(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Maz
 	if(P->tope->numero == 13 && R->tope->numero == 13 && S->tope->numero == 13 && T->tope->numero == 13)
 	{
 		system("CLS");
-		imprimir_tablero(M, M_, P, R, S, T, A, B, C, D, E, F, G);
+		imprimir_tablero_(M, M_, P, R, S, T, A, B, C, D, E, F, G);
 		printf("You win!\n");
 		*salida = 1;
 	}
