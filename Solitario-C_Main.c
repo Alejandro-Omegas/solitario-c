@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
-//#include <windows.h>
 
 typedef struct carta
 {
@@ -43,6 +42,8 @@ void movimiento_rapido(Mazo* origen, Mazo* P, Mazo* R, Mazo* S, Mazo* T, int fil
 void prompt(Mazo* M, Mazo* M_,Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo* B, Mazo* C, Mazo* D, Mazo* E, Mazo* F, Mazo* G, int* salida);
 void chequar_victoria(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo* B, Mazo* C, Mazo* D, Mazo* E, Mazo* F, Mazo* G, int* salida);
 int detectar_indice_mazo(char caracter);
+void nuke(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo* B, Mazo* C, Mazo* D, Mazo* E, Mazo* F, Mazo* G); //para liberar la memoria de todas las cartas tras terminar el juego
+void help();
 void terminar_memoria_insuficiente();
 
 int main()
@@ -119,7 +120,8 @@ void imprimir_tablero_(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Ma
 	imprimir_carta__(S->tope); printf("\033[42m ");
 	imprimir_carta__(T->tope); printf("\n\n");
 	
-	printf("     A     B     C     D     E     F     G\n");
+	printf("\033[42m     A     B     C     D     E     F     G\n");
+	
 	for(fila = 1; fila <= 15; fila++)
 	{
 		printf("%2d ", fila);
@@ -202,6 +204,7 @@ void distribuir_cartas(Mazo* M, Mazo* M_, Mazo* A, Mazo* B, Mazo* C, Mazo* D, Ma
 	}
 
 	mover_tope_carta(M, M_); //M_ sera el que muestra graficamente la carta revelada para el monticulo desordenado
+	M_->tope->oculto = 0; //revelar carta del monticulo desordenado
 	
 	Carta* nroColumnas[7] = { A->base, B->base, C->base, D->base, E->base, F->base, G->base };
 	
@@ -213,6 +216,7 @@ void distribuir_cartas(Mazo* M, Mazo* M_, Mazo* A, Mazo* B, Mazo* C, Mazo* D, Ma
 			if(nroColumnas[y] != NULL)
 			{
 				nroColumnas[y]->fila = x;
+				if(nroColumnas[y]->anterior == NULL) nroColumnas[y]->oculto = 0; //revelamos el tope de la carta
 				nroColumnas[y] = nroColumnas[y]->anterior;
 			}
 		}
@@ -235,7 +239,7 @@ void generar_mazo(Mazo* mazo)
 			nuevaCarta->color = palo <= 4 ? 0 : 1;
 			nuevaCarta->palo = palo;
 			nuevaCarta->numero = numero;
-			nuevaCarta->oculto = 0; //revelado
+			nuevaCarta->oculto = 1; //oculto
 			nuevaCarta->siguiente = NULL;
 								
 			if(mazo->tope == NULL) //si mazo esta vacio
@@ -321,12 +325,12 @@ void imprimir_mazo(Mazo* mazo) //usado para DEBUG
 		
 		if(scout->oculto == 0) //carta revelada
 		{
-			if(numero == 58) printf("%2d %s%s[%c10]%s\n", n, coloresTexto[scout->color], coloresFondoTexto[scout->oculto], scout->palo, textoDefecto); //para el caso que sea 10
-			else printf("%2d %s%s[%c%2c]%s\n", n, coloresTexto[scout->color], coloresFondoTexto[scout->oculto], scout->palo, numero, textoDefecto);
+			if(numero == 58) printf("%2d %s%s|%c10|%s\n", n, coloresTexto[scout->color], coloresFondoTexto[scout->oculto], scout->palo, textoDefecto); //para el caso que sea 10
+			else printf("%2d %s%s|%c%2c|%s\n", n, coloresTexto[scout->color], coloresFondoTexto[scout->oculto], scout->palo, numero, textoDefecto);
 		}
 		else //carta oculta
 		{
-			printf("%2d %s%s[   ]%s\n", n, coloresTexto[1], coloresFondoTexto[scout->oculto], textoDefecto);
+			printf("%2d %s%s|   |%s\n", n, coloresTexto[1], coloresFondoTexto[scout->oculto], textoDefecto);
 		}
 
 		scout = scout->siguiente;
@@ -362,12 +366,12 @@ void imprimir_carta(Carta* carta)
 	
 	if(carta->oculto == 0) //carta revelada
 	{
-		if(numero == 58) printf("%s%s[%c10]%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], carta->palo, textoDefecto); //para el caso que sea 10
-		else printf("%s%s[%c%2c]%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], carta->palo, numero, textoDefecto);
+		if(numero == 58) printf("%s%s|%c10|%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], carta->palo, textoDefecto); //para el caso que sea 10
+		else printf("%s%s|%c%2c|%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], carta->palo, numero, textoDefecto);
 	}
 	else //carta oculta
 	{
-		printf("%s%s[   ]%s", coloresTexto[1], coloresFondoTexto[carta->oculto], textoDefecto);
+		printf("%s%s|   |%s", coloresTexto[1], coloresFondoTexto[carta->oculto], textoDefecto);
 	}
 }
 
@@ -382,17 +386,17 @@ void imprimir_carta_(Carta* carta)
 	
 	if(carta == NULL) //en caso de carta nula, solo imprimimos espacios representando casilla vacia
 	{
-		printf("     ");
+		printf("\033[42m     ");
 		return; 
 	}
 	
 	if(carta->oculto == 0) //carta revelada
 	{
-		printf("%s%s[   ]%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], textoDefecto);
+		printf("%s%s|   |%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], textoDefecto);
 	}
 	else //carta oculta
 	{
-		printf("%s%s[   ]%s", coloresTexto[1], coloresFondoTexto[carta->oculto], textoDefecto);
+		printf("%s%s|   |%s", coloresTexto[1], coloresFondoTexto[carta->oculto], textoDefecto);
 	}
 }
 
@@ -407,7 +411,7 @@ void imprimir_carta__(Carta* carta)
 	
 	if(carta == NULL) //en caso de carta nula, solo imprimimos espacios representando casilla vacia
 	{
-		printf("     ");
+		printf("\033[42m     ");
 		return; 
 	}
 	
@@ -422,12 +426,12 @@ void imprimir_carta__(Carta* carta)
 	
 	if(carta->oculto == 0) //carta revelada
 	{
-		if(numero == 58) printf("%s%s[10%c]%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], carta->palo, textoDefecto); //para el caso que sea 10
-		else printf("%s%s[%-2c%c]%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], numero, carta->palo, textoDefecto);
+		if(numero == 58) printf("%s%s|10%c|%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], carta->palo, textoDefecto); //para el caso que sea 10
+		else printf("%s%s|%-2c%c|%s", coloresTexto[carta->color], coloresFondoTexto[carta->oculto], numero, carta->palo, textoDefecto);
 	}
 	else //carta oculta
 	{
-		printf("%s%s[   ]%s", coloresTexto[1], coloresFondoTexto[carta->oculto], textoDefecto);
+		printf("%s%s|   |%s", coloresTexto[1], coloresFondoTexto[carta->oculto], textoDefecto);
 	}
 }
 
@@ -439,45 +443,71 @@ void terminar_memoria_insuficiente()
 
 void tp_final()
 {
-	//SetConsoleTextAttribute (GetStdHandle(STD_OUTPUT_HANDLE), BACKGROUND_GREEN );
 	system("COLOR 2F"); //para color de fondo verde (2) con color de letras blanco brillante (F)
-	srand(time(NULL));
-
-	Mazo M, M_; //monticulo desordenado. El M_ sera donde se coloquen las cartas de M conforme se revelen
-	Mazo P, R, S, T; //monticulos ordenados
-	Mazo A, B, C, D, E, F, G; //las columnas
 	
-	//Inicializar mazos
-	M.tope = NULL; M.base = NULL;
-	M_.tope = NULL; M_.base = NULL;
-	P.tope = NULL; P.base = NULL;
-	R.tope = NULL; R.base = NULL;
-	S.tope = NULL; S.base = NULL;
-	T.tope = NULL; T.base = NULL;
-	A.tope = NULL; A.base = NULL;
-	B.tope = NULL; B.base = NULL;
-	C.tope = NULL; C.base = NULL;
-	D.tope = NULL; D.base = NULL;
-	E.tope = NULL; E.base = NULL;
-	F.tope = NULL; F.base = NULL;
-	G.tope = NULL; G.base = NULL;
+	int salida;
 	
-	int salida = 0; //bandera de salida
-	
-	generar_mazo(&M);
-	mezclar_mazo(&M);
-	distribuir_cartas(&M, &M_, &A, &B, &C, &D, &E, &F, &G);
-	
-	while(salida  == 0)
+	do
 	{
-		system("CLS");
-		imprimir_tablero_(&M, &M_, &P, &R, &S, &T, &A, &B, &C, &D, &E, &F, &G);
-		prompt(&M, &M_, &P, &R, &S, &T, &A, &B, &C, &D, &E, &F, &G, &salida);
-		chequar_victoria(&M, &M_, &P, &R, &S, &T, &A, &B, &C, &D, &E, &F, &G, &salida);
+		srand(time(NULL));
+
+		Mazo M, M_; //monticulo desordenado. El M_ sera donde se coloquen las cartas de M conforme se revelen
+		Mazo P, R, S, T; //monticulos ordenados
+		Mazo A, B, C, D, E, F, G; //las columnas
+		
+		//Inicializar mazos
+		M.tope = NULL; M.base = NULL;
+		M_.tope = NULL; M_.base = NULL;
+		P.tope = NULL; P.base = NULL;
+		R.tope = NULL; R.base = NULL;
+		S.tope = NULL; S.base = NULL;
+		T.tope = NULL; T.base = NULL;
+		A.tope = NULL; A.base = NULL;
+		B.tope = NULL; B.base = NULL;
+		C.tope = NULL; C.base = NULL;
+		D.tope = NULL; D.base = NULL;
+		E.tope = NULL; E.base = NULL;
+		F.tope = NULL; F.base = NULL;
+		G.tope = NULL; G.base = NULL;
+		
+	    salida = 0; //bandera de salida: 0 = continua juego, 1 = termina juego, 2 = reiniciar juego
+		
+		//funciones pre-juego
+		generar_mazo(&M);
+		mezclar_mazo(&M);
+		distribuir_cartas(&M, &M_, &A, &B, &C, &D, &E, &F, &G);
+		
+		//juego
+		while(salida  == 0)
+		{
+			system("CLS");
+			imprimir_tablero_(&M, &M_, &P, &R, &S, &T, &A, &B, &C, &D, &E, &F, &G);
+			prompt(&M, &M_, &P, &R, &S, &T, &A, &B, &C, &D, &E, &F, &G, &salida);
+			chequar_victoria(&M, &M_, &P, &R, &S, &T, &A, &B, &C, &D, &E, &F, &G, &salida);
+		}
+		
+		nuke(&M, &M_, &P, &R, &S, &T, &A, &B, &C, &D, &E, &F, &G); //libera toda la memoria de los mazos
 	}
-	
-	//nuke();
+	while(salida == 2);
+
 	system("PAUSE");
+}
+
+void nuke(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo* B, Mazo* C, Mazo* D, Mazo* E, Mazo* F, Mazo* G)
+{
+	Mazo* mazos[13] = { M, M_, P, R, S, T, A, B, C, D, E, F, G };
+	Carta* cartaABorrar;
+	int x;
+	
+	for(x = 0; x < 13; x++)
+	{
+		while(mazos[x]->tope != NULL)
+		{
+			cartaABorrar = mazos[x]->tope;
+			mazos[x]->tope = mazos[x]->tope->siguiente;
+			free(cartaABorrar);
+		}
+	}
 }
 
 void mover_cartas_entre_columnas(Mazo* mazoOrigen, Mazo* mazoDestino, int fila)
@@ -561,7 +591,6 @@ void mover_cartas_entre_columnas(Mazo* mazoOrigen, Mazo* mazoDestino, int fila)
 					scout = scout->anterior;
 				}
 			}
-		//	printf("Base: %p [%c%2d]", mazoOrigen->base, mazoOrigen->base->palo, mazoOrigen->base->numero); getchar(); //DEBUG	
 		}
 
 		return;
@@ -663,9 +692,21 @@ void prompt(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo
         }
     }
 	
+	if(strcmp(prompt, "help") == 0) //abre pantalla de ayuda ingresando "help" en minusculas
+	{
+		help();
+		return;
+	}
+	
 	if(strcmp(prompt, "exit") == 0) //se puede salir del juego ingresando "exit" todo en minuscula
 	{
 		*salida = 1;
+		return;
+	}
+	
+	if(strcmp(prompt, "restart") == 0) //para reiniciar del juego ingresando "restart" todo en minuscula
+	{
+		*salida = 2;
 		return;
 	}
 	
@@ -699,25 +740,28 @@ void prompt(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo
 			}
 			else if(prompt[1] == 'M' || prompt[1] == 'm')
 			{
-				movimiento_rapido(M_, P, R, S, T, -1);
+				if(M_->tope != NULL) movimiento_rapido(M_, P, R, S, T, -1);
 			}
 			else
 			{				
 				//despliega siguiente carta del monticulo desordenado
 				if(M->tope != NULL) //el monticulo desordenado tiene aun cartas
 				{
-					mover_tope_carta(M, M_);	
+					mover_tope_carta(M, M_);
+					M_->tope->oculto = 0;	
 				}
 				else //el monticulo desordenado no tiene cartas que sacar
 				{
 					while(M_->tope != NULL) //el sub-monticulo desordenado tiene aun cartas, entonces los regresa al M
 					{
 						mover_tope_carta(M_, M);
+						M->tope->oculto = 1;
 					}
 					
 					if(M->tope != NULL) //significa que se movio cartas de M_, i.e., hay aun cartas
 					{
 						mover_tope_carta(M, M_);
+						M_->tope->oculto = 0;
 					}	
 				}
 			}
@@ -754,15 +798,19 @@ void prompt(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo
 							{
 								case 'P': case 'p':
 									mover_carta_pila_ordenada(columnas[columna], P, fila);
+									if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 									break;
 								case 'T': case 't':
 									mover_carta_pila_ordenada(columnas[columna], T, fila);
+									if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 									break;
 								case 'R': case 'r':
 									mover_carta_pila_ordenada(columnas[columna], R, fila);
+									if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 									break;
 								case 'S': case 's':
 									mover_carta_pila_ordenada(columnas[columna], S, fila);
+									if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 									break;				
 							}
 			
@@ -772,6 +820,7 @@ void prompt(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo
 								if(detectar_indice_mazo(prompt[0]) != detectar_indice_mazo(prompt[4]))
 								{
 									mover_cartas_entre_columnas(columnas[detectar_indice_mazo(prompt[0])], columnas[detectar_indice_mazo(prompt[4])], fila);
+									if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 								}	
 							}
 						}
@@ -784,15 +833,19 @@ void prompt(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo
 							{
 								case 'P': case 'p':
 									mover_carta_pila_ordenada(columnas[columna], P, 1);
+									if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 									break;
 								case 'T': case 't':
 									mover_carta_pila_ordenada(columnas[columna], T, 1);
+									if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 									break;
 								case 'R': case 'r':
 									mover_carta_pila_ordenada(columnas[columna], R, 1);
+									if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 									break;
 								case 'S': case 's':
 									mover_carta_pila_ordenada(columnas[columna], S, 1);
+									if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 									break;				
 							}
 			
@@ -802,6 +855,7 @@ void prompt(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo
 								if(detectar_indice_mazo(prompt[0]) != detectar_indice_mazo(prompt[3]))
 								{
 									mover_cartas_entre_columnas(columnas[detectar_indice_mazo(prompt[0])], columnas[detectar_indice_mazo(prompt[3])], 1);
+									if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 								}	
 							}
 						}
@@ -817,15 +871,19 @@ void prompt(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo
 						{
 							case 'P': case 'p':
 								mover_carta_pila_ordenada(columnas[columna], P, fila);
+								if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 								break;
 							case 'T': case 't':
 								mover_carta_pila_ordenada(columnas[columna], T, fila);
+								if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 								break;
 							case 'R': case 'r':
 								mover_carta_pila_ordenada(columnas[columna], R, fila);
+								if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 								break;
 							case 'S': case 's':
 								mover_carta_pila_ordenada(columnas[columna], S, fila);
+								if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 								break;				
 						}
 			
@@ -835,6 +893,7 @@ void prompt(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo
 							if(detectar_indice_mazo(prompt[0]) != detectar_indice_mazo(prompt[3]))
 							{
 								mover_cartas_entre_columnas(columnas[detectar_indice_mazo(prompt[0])], columnas[detectar_indice_mazo(prompt[3])], fila);
+								if(columnas[detectar_indice_mazo(prompt[0])]->tope != NULL) columnas[detectar_indice_mazo(prompt[0])]->tope->oculto = 0;
 							}	
 						}
 					}
@@ -845,15 +904,19 @@ void prompt(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo
 					{
 						case 'P': case 'p':
 							mover_carta_pila_ordenada(columnas[columna], P, columnas[columna]->tope->fila);
+							if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 							break;
 						case 'T': case 't':
 							mover_carta_pila_ordenada(columnas[columna], T, columnas[columna]->tope->fila);
+							if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 							break;
 						case 'R': case 'r':
 							mover_carta_pila_ordenada(columnas[columna], R, columnas[columna]->tope->fila);
+							if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 							break;
 						case 'S': case 's':
 							mover_carta_pila_ordenada(columnas[columna], S, columnas[columna]->tope->fila);
+							if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 							break;				
 					}
 					
@@ -863,14 +926,17 @@ void prompt(Mazo* M, Mazo* M_, Mazo* P, Mazo* R, Mazo* S, Mazo* T, Mazo* A, Mazo
 						if(detectar_indice_mazo(prompt[0]) != detectar_indice_mazo(prompt[2]))
 						{
 							mover_cartas_entre_columnas(columnas[detectar_indice_mazo(prompt[0])], columnas[detectar_indice_mazo(prompt[2])], columnas[columna]->tope->fila);
+							if(columnas[detectar_indice_mazo(prompt[0])]->tope != NULL) columnas[detectar_indice_mazo(prompt[0])]->tope->oculto = 0;
 						}	
 					}
 				}
 				else if((prompt[1] >= 'A' && prompt[1] <= 'G') || (prompt[1] >= 'a' && prompt[1] <= 'g'))
 				{//movimiento rapido: si ingresa BB, por ejemplo, y la carta al tope de B puede colocarse en alguno de los monticulos ordenados, se colocara, seleccionando el monticulo correcto automaticamente
-					if(detectar_indice_mazo(prompt[0]) == detectar_indice_mazo(prompt[1]))
+					if(columnas[detectar_indice_mazo(prompt[0])]->tope != NULL &&
+					   detectar_indice_mazo(prompt[0]) == detectar_indice_mazo(prompt[1]))
 					{
 						movimiento_rapido(columnas[detectar_indice_mazo(prompt[1])], P, R, S, T, columnas[detectar_indice_mazo(prompt[1])]->tope->fila);
+						if(columnas[columna]->tope != NULL) columnas[columna]->tope->oculto = 0;
 					}		
 				}
 			}	
@@ -949,4 +1015,43 @@ int detectar_indice_mazo(char caracter)
 	if(caracter == 'T' || caracter == 't') return 3;
 	
 	return -1;
+}
+
+void help()
+{
+	system("CLS");
+	printf("Los mazos estan nombrados con diferentes letras:\n");
+	printf("- M es el monticulo desordenado (arriba a la izquierda)\n");
+	printf("- P, R, S y T son los monticulos ordenados, los cuales estan vacios al inicio del juego (arriba a la derecha)\n");
+	printf("- A, B, C, D, E, F y G son monticulos ordenados en columnas, donde inicialmente solo las cartas al tope estan reveladas\n\n");
+	printf("El objetivo es ir moviendo las cartas bajo ciertas reglas, de manera a colocarlas todas en los monticulos ordenados (P, R, S y T) de manera que cada monticulo contenga solo cartas del mismo palo y ordenados de menor a mayor (con el As al fondo y el King al tope)\n\n");
+	printf(" Reglas\n");
+	printf(" ------\n");
+	printf("En cada movimiento puedes realizar una de estas acciones:\n");
+	printf("- Puedes colocar la carta de M a su costado boca arriba, una encima de otra. Si se acaban las cartas del mazo, puedes colocar de vuelta el mazo boca abajo, para asi revelar de a uno las cartas otra vez\n");
+	printf("- Puedes mover la carta al tope de entre las cartas reveladas de M o del tope de algunas de las columnas (A, B, C, D, E, F, G) a unos de los monticulos P, R, S y T, siempre que cumpla con lo siguiente;\n");
+	printf(" -> Si el monticulo P, R, S, T esta vacio, puedes mover la carta ahi si su valor es As\n");
+	printf(" -> Si el monticulo P, R, S, T tiene alguna carta, puedes mover la carta si el palo es el mismo y su valor es +1 mayor al que esta en su tope. Por ejemplo, si en el monticulo R la carta al tope es 3 de picas, entonces solo puedes mover encima un 4 de picas\n");
+	printf("- Puedes mover una carta desde M, o P, R, S, T al tope de algunas de las columnas (A, B, C, D, E, F, G) bajo la regla que la carta a mover debe de ser de un color opuesto al que esta al tope de la columna, y su valor debe ser uno menos que la carta que ya esta en el tope; Ejemplo: La columna F tiene una carta roja con valor 5 en su tope, por lo que solo puedes mover a ella un 4 negro\n");
+	printf("- Puedes hacer este mismo movimiento anterior entre diferentes columnas. Por ejemplo; puedes mover un 5 negro al tope de la columna A hacia el 6 rojo que la columna G tiene en su tope\n");
+	printf("- Este mismo movimiento puedes hacerlo con varias cartas a la vez, siempre que las cartas a mover sigan el orden de colores alternantes y valores decrecientes; Ejemplo: digamos que en la columna A tenemos en la columna 5 negro, 4 rojo y 3 negro, siendo esta ultima la carta en su tope. Nosotros podemos mover todas estas cartas en conjunto hacia otra columna siempre que esa columna tenga un 6 rojo. Si teniamos 5 negro, 4 rojo y 2 rojo, entonces no lo podriamos mover en conjunto, porque el 4 rojo y el 2 rojo no cumplen con la condicion de numeros consecutivos descendiente y colores alternantes\n");
+	printf("- Cuando mueves una carta del tope de una de las columnas, la carta oculta abajo suyo, debe ser volteada boca-arriba.\n\n");
+	printf(" Valores\n");
+	printf(" -------\n");
+	printf("Los valores de las cartas son igual al numero que tiene impreso, salvo el caso del As (A) que vale 1, Jack (J) que vale 11, Queen (Q) que vale 12 y King (K) que vale 13\n\n");
+	printf(" Controles\n");
+	printf(" ---------\n");
+	printf("Ingresa las letras de dos mazos separados por un guion (-) y presiona ENTER para intentar mover la carta del mazo asociado a la primera letra, hacia el mazo asociado a la segunda letra. Ejemplo: \"a-b\" intentara mover la carta al tope de A hacia el tope de B\n");
+	printf("Puedes intentar mover la carta del tope de un M o de una\n de las columnas (A, B, C, D, E, F, G) hacia P, R, S, T ingresando la letra origen dos veces. Ejemplo: ingresando \"gg\" intentara ubicar la carta al tope de G hacia el tope correcto de alguno de los monticulos P, R, S o T\n");
+	printf("Puedes intentar mover un conjunto de cartas de una columna ingresando la letra de la columna origen, el numero de fila de la carta a mover, seguida de un guion (-) y la letra destino. Ejemplo: \"e3-a\" intentara mover un conjunto de cartas de E, desde su tope hasta la carta en la fila 3, hacia el tope de la columna A\n");
+	printf("Puedes ver la siguiente carta del tope de M ingresando \"m\"\n");
+	printf("Cabe mencionar, que el prompt reconoce tanto mayusculas como minusculas para estos controles\n\n");
+	printf(" Miscelaneas\n");
+	printf(" -----------\n");
+	printf("Puedes ingresar estos otros comandos, seguido de ENTER:\n");
+	printf("\"exit\" - Termina el juego\n");
+	printf("\"restart\" - Reinicia el juego\n");
+	printf("\"help\" - Muestra esta pantalla de ayuda\n\n");
+	fputs("Programado por Alejandro Daniel, Arriola Bareiro\n", stdout);
+	system("PAUSE");
 }
