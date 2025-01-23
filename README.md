@@ -31,3 +31,6 @@ Developed on Dev-C++ 5.11 where you can compile it by pressing F9. Entry point i
 
 ## Note
 The card symbol may not be displayed properly on some systems.
+
+## Misc
+It took me around one week to complete this project; including properly learning pointers and dynamic memory, experimenting, designing, testing, fixing bugs and documenting.
