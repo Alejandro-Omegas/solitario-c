@@ -1,6 +1,10 @@
 # Solitario-C
 Solitarie Windows console game using ANSI escape sequences for the "graphics" where you move the cards with command inputs, by entering the coordinates of the cards.
 
+It is based on my final project for my 'Introduction to C' course at my college. The original project was written in a single 1K lines-of-code .c monolith and had an extra feature to log the moves inputted into a txt file. 
+
+The original project did not require visual details, but I added them anyway. I also added user commands to make some card movements easier to perform.
+
 ## Controls
 The board displays numbers and letters to represent stacks of cards and positions. As long as the movement is allowed, you can move a card from one stack to another by entering the letter of the origin stack, a hypen, and the letter of the destination stack. Ex.: "M-B" moves the card at the top of the M stack to the top of the B stack.
 
@@ -33,4 +37,4 @@ Developed on Dev-C++ 5.11 where you can compile it by pressing F9. Entry point i
 The card symbol may not be displayed properly on some systems.
 
 ## Misc
-It took me around one week to complete this project; including properly learning pointers and dynamic memory, experimenting, designing, testing, fixing bugs and documenting.
+It took me around one week to complete this project; including properly learning pointers and dynamic memory, experimenting, designing, testing, fixing bugs and documenting. The null pointer dereference was by far the most common bug; so the lesson to learn while working with pointers is: **always** check if the pointer is null **before** dereferencing it.
